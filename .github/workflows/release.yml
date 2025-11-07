@@ -22,6 +22,16 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Download SnoreToast
+        shell: pwsh
+        run: |
+          $url = "https://example.com/path/to/snoretoast.exe"   # <-- substituir
+          $sha = "xxxxxxxx...xxxxxxxx"                          # <-- substituir
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile snoretoast.exe
+          $hash = (Get-FileHash snoretoast.exe -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $sha.ToLower()) { throw "SHA256 mismatch for snoretoast.exe" }
+          Copy-Item snoretoast.exe dist\GlpiNotifier\snoretoast.exe -Force
+
       - name: Build (release)
         run: cargo build --release
 
