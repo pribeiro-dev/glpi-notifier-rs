@@ -1,4 +1,3 @@
-
 mod glpi;
 mod state;
 
@@ -50,7 +49,10 @@ async fn main() -> Result<()> {
         .ok()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty());
-    let user_token = env::var("GLPI_USER_TOKEN").unwrap_or_default().trim().to_string();
+    let user_token = env::var("GLPI_USER_TOKEN")
+        .unwrap_or_default()
+        .trim()
+        .to_string();
     let poll_secs: u64 = env::var("POLL_SECONDS")
         .ok()
         .and_then(|s| s.trim().parse().ok())
@@ -66,7 +68,9 @@ async fn main() -> Result<()> {
         .unwrap_or(false);
 
     if base_url.is_empty() || user_token.is_empty() {
-        error!("Please set GLPI_BASE_URL and GLPI_USER_TOKEN in .env (no quotes, no extra spaces).");
+        error!(
+            "Please set GLPI_BASE_URL and GLPI_USER_TOKEN in .env (no quotes, no extra spaces)."
+        );
         return Ok(());
     }
 
@@ -147,7 +151,8 @@ pub async fn main_loop_with_flags<F: Fn() -> bool>(
     let mut st: SeenState = match load_state() {
         Ok(s) => s,
         Err(e) => {
-            warn!("Could not load state: {e:#}"); SeenState::default()
+            warn!("Could not load state: {e:#}");
+            SeenState::default()
         }
     };
     let mut first_run = st.seen_ticket_ids.is_empty();
@@ -169,7 +174,8 @@ pub async fn main_loop_with_flags<F: Fn() -> bool>(
             &mut first_run_notify,
             debug_list,
         )
-        .await {
+        .await
+        {
             Ok(new_count) => {
                 write_heartbeat(true, new_count);
             }
@@ -295,8 +301,9 @@ fn show_toast_snoretoast(
     ticket_id: i64,
     open_url: Option<&str>,
 ) -> Result<()> {
-    let snore = find_snoretoast()
-        .ok_or_else(|| anyhow!("snoretoast.exe not found (place it next to the .exe or in PATH)"))?;
+    let snore = find_snoretoast().ok_or_else(|| {
+        anyhow!("snoretoast.exe not found (place it next to the .exe or in PATH)")
+    })?;
 
     let mut cmd = Command::new(snore);
     cmd.arg("-appID")
@@ -356,7 +363,9 @@ fn show_toast_snoretoast(
 
 fn open_url_windows(url: &str) -> Result<()> {
     // 'start' needs an empty title "" after /C
-    Command::new("cmd").args(&["/C", "start", "", url]).spawn()?;
+    Command::new("cmd")
+        .args(&["/C", "start", "", url])
+        .spawn()?;
     Ok(())
 }
 
@@ -392,8 +401,8 @@ fn ensure_snore_shortcut(app_id: &str) {
             let _ = std::process::Command::new(&snore)
                 .arg("-install")
                 .arg("GlpiNotifier") // shortcut name
-                .arg(&exe_str)       // executable path
-                .arg(app_id)         // AUMID
+                .arg(&exe_str) // executable path
+                .arg(app_id) // AUMID
                 .status();
         }
     }
@@ -411,7 +420,10 @@ fn heartbeat_path() -> Option<std::path::PathBuf> {
 fn write_heartbeat(ok: bool, new_count: usize) {
     use std::time::{SystemTime, UNIX_EPOCH};
     if let Some(p) = heartbeat_path() {
-        let ts = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
         let payload = format!(r#"{{\"ts\": {ts}, \"ok\": {ok}, \"new\": {new_count}}}"#);
         let _ = std::fs::write(p, payload);
     }

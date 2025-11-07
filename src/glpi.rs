@@ -55,7 +55,10 @@ impl GlpiClient {
     fn hdrs(&self) -> HeaderMap {
         let mut h = HeaderMap::new();
         h.insert("Accept", HeaderValue::from_static("application/json"));
-        h.insert("User-Agent", HeaderValue::from_static("glpi-notifier-rs/0.1"));
+        h.insert(
+            "User-Agent",
+            HeaderValue::from_static("glpi-notifier-rs/0.1"),
+        );
         if let Some(ref s) = self.session_token {
             h.insert("Session-Token", HeaderValue::from_str(s).unwrap());
         }
@@ -69,7 +72,10 @@ impl GlpiClient {
     pub async fn init_session(&mut self) -> Result<()> {
         let mut hdrs = HeaderMap::new();
         hdrs.insert("Accept", HeaderValue::from_static("application/json"));
-        hdrs.insert("User-Agent", HeaderValue::from_static("glpi-notifier-rs/0.1"));
+        hdrs.insert(
+            "User-Agent",
+            HeaderValue::from_static("glpi-notifier-rs/0.1"),
+        );
         hdrs.insert(
             "Authorization",
             HeaderValue::from_str(&format!("user_token {}", self.user_token))?,
@@ -219,11 +225,19 @@ impl GlpiClient {
         ];
 
         let url = format!("{}/search/Ticket", self.base_url);
-        let r = self.http.get(url).headers(self.hdrs()).query(&params).send().await?;
+        let r = self
+            .http
+            .get(url)
+            .headers(self.hdrs())
+            .query(&params)
+            .send()
+            .await?;
         if !r.status().is_success() {
             let status = r.status();
             let body = r.text().await.unwrap_or_default();
-            return Err(anyhow!("search/Ticket(recent) failed: {status} | body: {body}"));
+            return Err(anyhow!(
+                "search/Ticket(recent) failed: {status} | body: {body}"
+            ));
         }
         let payload: serde_json::Value = r.json().await?;
         Self::parse_ticket_rows(
@@ -276,7 +290,9 @@ impl GlpiClient {
         fn extract_i64(v: &Value) -> Option<i64> {
             match v {
                 Value::String(s) => s.trim().parse::<i64>().ok(),
-                Value::Number(n) => n.as_i64().or_else(|| n.as_u64().and_then(|u| i64::try_from(u).ok())),
+                Value::Number(n) => n
+                    .as_i64()
+                    .or_else(|| n.as_u64().and_then(|u| i64::try_from(u).ok())),
                 _ => None,
             }
         }
@@ -294,6 +310,10 @@ impl GlpiClient {
         let name = row.get(namek).and_then(extract_string).unwrap_or_default();
         let requester = reqk.and_then(|k| row.get(k)).and_then(extract_string);
 
-        Some(Ticket { id, name, requester })
+        Some(Ticket {
+            id,
+            name,
+            requester,
+        })
     }
 }
