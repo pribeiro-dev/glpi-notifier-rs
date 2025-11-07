@@ -67,7 +67,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-/// Main loop used by the console build (and previously by the Service build).
+// Main loop used by the console build (and previously by the Service build).
+
+#[allow(clippy::too_many_arguments)]
 pub async fn main_loop_with_flags<F: Fn() -> bool>(
     stop_flag: F,
     mut first_run_notify: bool,
@@ -162,6 +164,7 @@ pub async fn main_loop_with_flags<F: Fn() -> bool>(
 }
 
 /// Single poll iteration: fetch New tickets, notify unseen ones. Returns number of new notifications.
+#[allow(clippy::too_many_arguments)]
 async fn tick(
     client: &mut GlpiClient,
     id_id: i64,
@@ -296,7 +299,7 @@ fn show_toast_snoretoast(app_id: &str, title: &str, body: &str, ticket_id: i64, 
 
 fn open_url_windows(url: &str) -> Result<()> {
     // 'start' needs an empty title "" after /C
-    Command::new("cmd").args(&["/C", "start", "", url]).spawn()?;
+    Command::new("cmd").args(["/C", "start", "", url]).spawn()?;
     Ok(())
 }
 
@@ -359,6 +362,7 @@ fn write_heartbeat(ok: bool, new_count: usize) {
 /// 1) GLPI_LOGO_PATH (.env) if valid PNG
 /// 2) assets/logo.png next to the exe
 /// 3) %LOCALAPPDATA%/GlpiNotifier/logo.png
+///
 /// If none found, no image is attached.
 fn ensure_logo_file() -> Option<String> {
     use std::path::Path;
