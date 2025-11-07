@@ -28,11 +28,8 @@ async fn main() -> Result<()> {
 
     // Manual test of a toast
     if env::args().any(|a| a == "--test-toast") {
-        let dummy = Ticket {
-            id: 12345,
-            name: "Notification test".to_string(),
-            requester: Some("Example User".to_string()),
-        };
+        let dummy =
+            Ticket { id: 12345, name: "Notification test".to_string(), requester: Some("Example User".to_string()) };
         if let Err(e) = show_toast(&dummy) {
             eprintln!("Toast error: {e:#}");
         }
@@ -40,37 +37,16 @@ async fn main() -> Result<()> {
     }
 
     // Configuration from .env
-    let base_url = env::var("GLPI_BASE_URL")
-        .unwrap_or_default()
-        .trim()
-        .trim_end_matches('/')
-        .to_string();
-    let app_token = env::var("GLPI_APP_TOKEN")
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty());
-    let user_token = env::var("GLPI_USER_TOKEN")
-        .unwrap_or_default()
-        .trim()
-        .to_string();
-    let poll_secs: u64 = env::var("POLL_SECONDS")
-        .ok()
-        .and_then(|s| s.trim().parse().ok())
-        .unwrap_or(60);
-    let verify_ssl = env::var("VERIFY_SSL")
-        .map(|s| s.to_lowercase() == "true")
-        .unwrap_or(true);
-    let first_run_notify = env::var("FIRST_RUN_NOTIFY")
-        .map(|s| s.to_lowercase() == "true")
-        .unwrap_or(false);
-    let debug_list = env::var("DEBUG_LIST")
-        .map(|s| s.to_lowercase() == "true")
-        .unwrap_or(false);
+    let base_url = env::var("GLPI_BASE_URL").unwrap_or_default().trim().trim_end_matches('/').to_string();
+    let app_token = env::var("GLPI_APP_TOKEN").ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let user_token = env::var("GLPI_USER_TOKEN").unwrap_or_default().trim().to_string();
+    let poll_secs: u64 = env::var("POLL_SECONDS").ok().and_then(|s| s.trim().parse().ok()).unwrap_or(60);
+    let verify_ssl = env::var("VERIFY_SSL").map(|s| s.to_lowercase() == "true").unwrap_or(true);
+    let first_run_notify = env::var("FIRST_RUN_NOTIFY").map(|s| s.to_lowercase() == "true").unwrap_or(false);
+    let debug_list = env::var("DEBUG_LIST").map(|s| s.to_lowercase() == "true").unwrap_or(false);
 
     if base_url.is_empty() || user_token.is_empty() {
-        error!(
-            "Please set GLPI_BASE_URL and GLPI_USER_TOKEN in .env (no quotes, no extra spaces)."
-        );
+        error!("Please set GLPI_BASE_URL and GLPI_USER_TOKEN in .env (no quotes, no extra spaces).");
         return Ok(());
     }
 
@@ -119,22 +95,11 @@ pub async fn main_loop_with_flags<F: Fn() -> bool>(
     let (id_id, name_id, status_id, requester_id) = match async {
         client.init_session().await?;
         let ids = client
-            .resolve_field_ids(&[
-                "Ticket.id",
-                "Ticket.name",
-                "Ticket.status",
-                "Ticket._users_id_recipient",
-            ])
+            .resolve_field_ids(&["Ticket.id", "Ticket.name", "Ticket.status", "Ticket._users_id_recipient"])
             .await?;
-        let id_id = *ids
-            .get("Ticket.id")
-            .ok_or_else(|| anyhow!("field id not found"))?;
-        let name_id = *ids
-            .get("Ticket.name")
-            .ok_or_else(|| anyhow!("field name not found"))?;
-        let status_id = *ids
-            .get("Ticket.status")
-            .ok_or_else(|| anyhow!("field status not found"))?;
+        let id_id = *ids.get("Ticket.id").ok_or_else(|| anyhow!("field id not found"))?;
+        let name_id = *ids.get("Ticket.name").ok_or_else(|| anyhow!("field name not found"))?;
+        let status_id = *ids.get("Ticket.status").ok_or_else(|| anyhow!("field status not found"))?;
         let requester_id = ids.get("Ticket._users_id_recipient").copied();
         Ok::<(i64, i64, i64, Option<i64>), anyhow::Error>((id_id, name_id, status_id, requester_id))
     }
@@ -208,19 +173,12 @@ async fn tick(
     first_run_notify: &mut bool,
     debug_list: bool,
 ) -> Result<usize> {
-    let tickets = client
-        .search_new_tickets(id_id, name_id, status_id, requester_id, 200)
-        .await?;
+    let tickets = client.search_new_tickets(id_id, name_id, status_id, requester_id, 200).await?;
 
     if debug_list {
         info!("DEBUG: {} ticket(s) with status=New", tickets.len());
         for t in tickets.iter().take(10) {
-            info!(
-                "DEBUG: New -> #{} {} (by {})",
-                t.id,
-                t.name,
-                t.requester.as_deref().unwrap_or("?")
-            );
+            info!("DEBUG: New -> #{} {} (by {})", t.id, t.name, t.requester.as_deref().unwrap_or("?"));
         }
     }
 
@@ -239,10 +197,7 @@ async fn tick(
         st.seen_ticket_ids.extend(current_ids);
         save_state(st)?;
         *first_run = false;
-        info!(
-            "First run: marked {} 'New' tickets as seen. (FIRST_RUN_NOTIFY=false)",
-            st.seen_ticket_ids.len()
-        );
+        info!("First run: marked {} 'New' tickets as seen. (FIRST_RUN_NOTIFY=false)", st.seen_ticket_ids.len());
         return Ok(0);
     } else if *first_run && *first_run_notify {
         info!("First run WITH notifications (FIRST_RUN_NOTIFY=true).");
@@ -251,10 +206,7 @@ async fn tick(
     }
 
     // Filter unseen -> newest first
-    let mut fresh: Vec<&Ticket> = tickets
-        .iter()
-        .filter(|t| !st.seen_ticket_ids.contains(&t.id))
-        .collect();
+    let mut fresh: Vec<&Ticket> = tickets.iter().filter(|t| !st.seen_ticket_ids.contains(&t.id)).collect();
     fresh.sort_by_key(|t| -t.id);
 
     for t in &fresh {
@@ -264,11 +216,7 @@ async fn tick(
 
     if !fresh.is_empty() {
         save_state(st)?;
-        info!(
-            "Notified {} new ticket(s): {:?}",
-            fresh.len(),
-            fresh.iter().map(|t| t.id).collect::<Vec<_>>()
-        );
+        info!("Notified {} new ticket(s): {:?}", fresh.len(), fresh.iter().map(|t| t.id).collect::<Vec<_>>());
     }
 
     Ok(fresh.len())
@@ -285,25 +233,15 @@ fn show_toast(t: &Ticket) -> Result<()> {
     };
 
     // Build URL from template if configured
-    let open_url = URL_TEMPLATE
-        .get()
-        .and_then(|tpl| tpl.as_ref())
-        .map(|tpl| tpl.replace("{id}", &t.id.to_string()));
+    let open_url = URL_TEMPLATE.get().and_then(|tpl| tpl.as_ref()).map(|tpl| tpl.replace("{id}", &t.id.to_string()));
 
     show_toast_snoretoast("GlpiNotifier", &title, &msg, t.id, open_url.as_deref())
 }
 
 /// Call snoretoast.exe to display a Windows toast with optional button and image.
-fn show_toast_snoretoast(
-    app_id: &str,
-    title: &str,
-    body: &str,
-    ticket_id: i64,
-    open_url: Option<&str>,
-) -> Result<()> {
-    let snore = find_snoretoast().ok_or_else(|| {
-        anyhow!("snoretoast.exe not found (place it next to the .exe or in PATH)")
-    })?;
+fn show_toast_snoretoast(app_id: &str, title: &str, body: &str, ticket_id: i64, open_url: Option<&str>) -> Result<()> {
+    let snore =
+        find_snoretoast().ok_or_else(|| anyhow!("snoretoast.exe not found (place it next to the .exe or in PATH)"))?;
 
     let mut cmd = Command::new(snore);
     cmd.arg("-appID")
@@ -353,19 +291,12 @@ fn show_toast_snoretoast(
 
     let stdout = String::from_utf8_lossy(&out.stdout);
     let stderr = String::from_utf8_lossy(&out.stderr);
-    Err(anyhow!(
-        "snoretoast failed (code {:?}). STDOUT:\n{}\nSTDERR:\n{}",
-        out.status.code(),
-        stdout,
-        stderr
-    ))
+    Err(anyhow!("snoretoast failed (code {:?}). STDOUT:\n{}\nSTDERR:\n{}", out.status.code(), stdout, stderr))
 }
 
 fn open_url_windows(url: &str) -> Result<()> {
     // 'start' needs an empty title "" after /C
-    Command::new("cmd")
-        .args(&["/C", "start", "", url])
-        .spawn()?;
+    Command::new("cmd").args(&["/C", "start", "", url]).spawn()?;
     Ok(())
 }
 
@@ -382,9 +313,7 @@ fn find_snoretoast() -> Option<String> {
     }
     // 2) typical Program Files location
     if let Ok(pf) = std::env::var("ProgramFiles") {
-        let cand = std::path::Path::new(&pf)
-            .join("SnoreToast")
-            .join("snoretoast.exe");
+        let cand = std::path::Path::new(&pf).join("SnoreToast").join("snoretoast.exe");
         if cand.exists() {
             return Some(cand.to_string_lossy().into_owned());
         }
@@ -420,10 +349,7 @@ fn heartbeat_path() -> Option<std::path::PathBuf> {
 fn write_heartbeat(ok: bool, new_count: usize) {
     use std::time::{SystemTime, UNIX_EPOCH};
     if let Some(p) = heartbeat_path() {
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+        let ts = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
         let payload = format!(r#"{{\"ts\": {ts}, \"ok\": {ok}, \"new\": {new_count}}}"#);
         let _ = std::fs::write(p, payload);
     }
