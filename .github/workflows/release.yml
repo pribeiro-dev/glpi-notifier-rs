@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+env:
+  SNORE_URL: = "https://github.com/pribeiro-dev/glpi-notifier-rs/releases/download/SnoreToast_0.9.0/snoretoast.exe"
+  SNORE_SHA: = "6F923279DDB75DFAAD02DCEE1580A6122290802CBF1FC5FFC6F5DB7E3A2F01D4"
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -25,11 +29,10 @@ jobs:
       - name: Download SnoreToast
         shell: pwsh
         run: |
-          $url = "https://example.com/path/to/snoretoast.exe"   # <-- substituir
-          $sha = "xxxxxxxx...xxxxxxxx"                          # <-- substituir
-          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile snoretoast.exe
+          Invoke-WebRequest -UseBasicParsing -Uri "${{ env.SNORE_URL }}" -OutFile snoretoast.exe
           $hash = (Get-FileHash snoretoast.exe -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne $sha.ToLower()) { throw "SHA256 mismatch for snoretoast.exe" }
+          if ($hash -ne "${{ env.SNORE_SHA }}".ToLower()) { throw "SHA256 mismatch for snoretoast.exe" }
+          New-Item -ItemType Directory -Force -Path dist\GlpiNotifier | Out-Null
           Copy-Item snoretoast.exe dist\GlpiNotifier\snoretoast.exe -Force
 
       - name: Build (release)
