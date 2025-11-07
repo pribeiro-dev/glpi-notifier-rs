@@ -1,6 +1,6 @@
 [package]
 name = "glpi-notifier-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Small GLPI ticket notifier for Windows (toasts via SnoreToast)."
 license = "MIT"
